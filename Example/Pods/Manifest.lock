@@ -1,0 +1,16 @@
+PODS:
+  - CorePersistence (0.1.0)
+
+DEPENDENCIES:
+  - CorePersistence (from `../`)
+
+EXTERNAL SOURCES:
+  CorePersistence:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  CorePersistence: 01dfef462a3833f8527b2f7ad5bac5c96898746a
+
+PODFILE CHECKSUM: a0fb8358e6828563aea38308845e04d1811f9839
+
+COCOAPODS: 1.8.4

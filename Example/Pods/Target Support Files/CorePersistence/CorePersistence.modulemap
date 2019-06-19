@@ -1,0 +1,6 @@
+framework module CorePersistence {
+  umbrella header "CorePersistence-umbrella.h"
+
+  export *
+  module * { export * }
+}

@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'CorePersistence_Example' do
+  pod 'CorePersistence', :path => '../'
+
+  target 'CorePersistence_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

@@ -1,0 +1,6 @@
+framework module Pods_CorePersistence_Tests {
+  umbrella header "Pods-CorePersistence_Tests-umbrella.h"
+
+  export *
+  module * { export * }
+}
