@@ -14,4 +14,18 @@ extension KeyPath {
                                    rightExpression: NSExpression(forConstantValue: value),
                                    modifier: .direct, type: op)
     }
+    
+    var stringKeyPath: String {
+        return NSExpression(forKeyPath: self).keyPath
+    }
+}
+
+public extension NSPredicate {
+    static var `true`: NSPredicate {
+        return NSPredicate(format: "TRUEPREDICATE")
+    }
+    
+    static var `false`: NSPredicate {
+        return NSPredicate(format: "FALSEPREDICATE")
+    }
 }

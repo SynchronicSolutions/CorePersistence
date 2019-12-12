@@ -1,6 +1,6 @@
 {
   "name": "CorePersistence",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "summary": "Wrapper around CoreData for parsing and persisting",
   "description": "'Wrapper around CoreData for parsing and persisting'",
   "homepage": "https://github.com/SynchronicSolutions/CorePersistence",
@@ -13,7 +13,7 @@
   },
   "source": {
     "git": "https://github.com/SynchronicSolutions/CorePersistence.git",
-    "tag": "0.1.0"
+    "tag": "0.0.1"
   },
   "swift_versions": "5.0",
   "platforms": {

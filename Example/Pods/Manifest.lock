@@ -1,5 +1,5 @@
 PODS:
-  - CorePersistence (0.1.0)
+  - CorePersistence (0.0.1)
 
 DEPENDENCIES:
   - CorePersistence (from `../`)
@@ -9,7 +9,7 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  CorePersistence: 01dfef462a3833f8527b2f7ad5bac5c96898746a
+  CorePersistence: 600194446fb9d5969eca494a13e8ead649c2d311
 
 PODFILE CHECKSUM: a0fb8358e6828563aea38308845e04d1811f9839
 

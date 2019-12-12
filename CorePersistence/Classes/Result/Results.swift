@@ -45,7 +45,7 @@ public class Results<EntityType: PersistableManagedObject> {
         let fetchRequest = NSFetchRequest<EntityType>(entityName: "\(EntityType.self)")
         fetchRequest.predicate = predicate
         fetchRequest.propertiesToGroupBy = groupBy
-        fetchRequest.sortDescriptors = sortBy ?? [NSSortDescriptor(key: "id", ascending: true)]
+        fetchRequest.sortDescriptors = sortBy ?? [NSSortDescriptor(key: EntityType.idKeyPath.stringKeyPath, ascending: true)]
 
         fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
                                                               managedObjectContext: managedObjectContext,

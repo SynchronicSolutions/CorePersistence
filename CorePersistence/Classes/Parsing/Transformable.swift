@@ -30,8 +30,8 @@ extension Int: BasicTransformable {
         if let intValue = value as? Int {
             return intValue
 
-        } else if let stringValue = value as? String {
-            return Int(stringValue)
+        } else if let stringValue = value as? String, let doubleValue = Double(stringValue) {
+            return Int(doubleValue)
         }
 
         return 0

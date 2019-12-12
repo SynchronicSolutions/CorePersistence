@@ -67,7 +67,7 @@ public protocol Parsable: PersistableManagedObject {
 public extension Parsable {
 
     static var jsonKey: String {
-        return "id"
+        return NSExpression(forKeyPath: idKeyPath).keyPath
     }
 
     var jsonDictionary: JSONObject {
@@ -117,13 +117,14 @@ public extension Parsable {
             guard
                 let transformableEntityID = json[keyPath: jsonKey] as? BasicTransformable,
                 let entityID = EntityID.transform(value: transformableEntityID),
-                let entity = get(entityID: entityID,
+                var entity = get(entityID: entityID,
                                  from: storeManager,
                                  sourceContext: context,
                                  shouldCreate: true) else {
                 continue
             }
 
+            entity[keyPath: idKeyPath] = entityID
             entity.mapValues(from: MappingValues(json: json, context: context))
             filledEntites.append(entity)
         }
