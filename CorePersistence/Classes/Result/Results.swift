@@ -63,7 +63,7 @@ public class Results<EntityType: PersistableManagedObject> {
             try fetchedResultsController.performFetch()
 
         } catch {
-            print("\n\nFETCHED RESULTS CONTROLLER FAILED TO FETCH ENTITY OF TYPE \(EntityType.self)\n\n")
+            Log.error("Results failed to fetch entities of type:\(EntityType.self)")
         }
     }
 

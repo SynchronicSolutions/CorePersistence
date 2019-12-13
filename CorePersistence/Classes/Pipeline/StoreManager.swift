@@ -13,6 +13,8 @@ public class StoreManager {
     /// `NSPersistentContainer` which should be injected,
     /// and used for CRUD operations with `Parsable` and `Persistable` objects
     private var persistantContainer: NSPersistentContainer
+    
+    public static let `default` = StoreManager()
 
     /// Initializer for `StoreManager`
     ///
@@ -23,11 +25,11 @@ public class StoreManager {
     }
 
     /// View context of an injected `NSPersistentContainer`
-    var mainContext: NSManagedObjectContext {
+    public var mainContext: NSManagedObjectContext {
         return persistantContainer.viewContext
     }
 
-    var newBackgroundContext: NSManagedObjectContext {
+    public var newBackgroundContext: NSManagedObjectContext {
         return persistantContainer.newBackgroundContext()
     }
 
@@ -40,13 +42,13 @@ public class StoreManager {
 }
 
 public struct DeleteOptions {
-    var sourceContext: NSManagedObjectContext?
+    var sourceContext: NSManagedObjectContext
     var offset: Int?
     var predicate: NSPredicate
     var sortDescriptors: [NSSortDescriptor]?
 
-    public init(sourceContext: NSManagedObjectContext? = nil,
-                predicate: NSPredicate = NSPredicate(format: "TRUEPREDICATE"),
+    public init(sourceContext: NSManagedObjectContext = StoreManager.default.newBackgroundContext,
+                predicate: NSPredicate = .true,
                 sortDescriptors: [NSSortDescriptor]? = nil,
                 offset: Int? = nil) {
         self.sourceContext = sourceContext

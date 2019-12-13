@@ -18,9 +18,9 @@ public protocol Parsable: PersistableManagedObject {
     var jsonDictionary: JSONObject { get }
 
     /// Method which performs parsing on a `Parsable` type. Given a `json` dictionary,
-    /// parsing is done using `ObjectMapper`, and then, on a background context, persisted to `NSPersistentStore`.
+    /// an Entity is parsed using `mapValues(:)`, and then, on a background context, persisted to `NSPersistentStore`.
     /// If an object already exists in the store, that one will be updated, so that the uniqueness of `entityID` will
-    /// be kept.
+    /// be kept.ectMapper
     ///
     /// - Parameters:
     ///   - json: [String: Any] dictionary which contains data which should be parsed.
@@ -31,8 +31,8 @@ public protocol Parsable: PersistableManagedObject {
     static func parse(json: JSONObject, in store: StoreManager, completeClosure: ((Self?) -> Void)?)
 
     /// Method which performs parsing on a `Parsable` type. Given a `json` array of dictionaries,
-    /// parsing is done using `ObjectMapper`, and then, on a background context, persisted to `NSPersistentStore`.
-    /// If any of the objects already exists in the store, those oneswill be updated,
+    /// entites are being parsed using `mapValues(:)`, and then, on a background context, persisted to `NSPersistentStore`.
+    /// If any of the objects already exists in the store, those ones will be updated,
     /// so that the uniqueness of `entityID` will be kept.
     ///
     /// - Parameters:
@@ -75,7 +75,7 @@ public extension Parsable {
     }
 
     static func parse(json: JSONObject,
-                      in store: StoreManager = StoreManager(),
+                      in store: StoreManager = StoreManager.default,
                       completeClosure: ((Self?) -> Void)? = nil) {
         parse(jsonArray: [json], in: store) { (entities) in
             completeClosure?(entities.first)
@@ -83,7 +83,7 @@ public extension Parsable {
     }
 
     static func parse(jsonArray: [JSONObject],
-                      in store: StoreManager = StoreManager(),
+                      in store: StoreManager = StoreManager.default,
                       completeClosure: (([Self]) -> Void)? = nil) {
         guard !jsonArray.isEmpty else {
             completeClosure?([])

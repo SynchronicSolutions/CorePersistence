@@ -29,7 +29,7 @@ public class CorePersistence {
 
             _mainContainer?.loadPersistentStores { (_, error) in
                 if let error = error {
-                    fatalError("\n\n\nFAILED TO LOAD STORE\n\(error)\n\n\n")
+                    Log.error("Failed to load store with error:\n\(error)")
                 }
             }
 
@@ -51,24 +51,24 @@ public class CorePersistence {
     func migrateIfNeeded(for modelName: String, handleMigration: (() -> Void)?) {
         guard let documentsDirectory = FileManager.default.urls(for: .applicationSupportDirectory,
                                                                 in: .userDomainMask).last else {
-                                                                    print("Failed to get documents directories")
+                                                                    Log.error("Failed to get documents directories")
                                                                     return
         }
 
         let storeURL = documentsDirectory.appendingPathComponent(modelName + ".sqlite")
 
         guard let modelURL = Bundle.main.url(forResource: modelName, withExtension: "momd") else {
-            print("Can't find model URL. Check if the modelName:\(modelName) is the same as .xcdatamodeld filename")
+            Log.error("Can't find model URL. Check if the modelName:\(modelName) is the same as .xcdatamodeld filename")
             return
         }
 
         guard let model = NSManagedObjectModel(contentsOf: modelURL) else {
-            print("Failed to create NSManagedObjectModel")
+            Log.error("Failed to create NSManagedObjectModel")
             return
         }
 
         guard FileManager.default.fileExists(atPath: storeURL.path) else {
-            print("Sqlite file doesn't exist on path, possible first app run: \(storeURL.path)")
+            Log.warning("Sqlite file doesn't exist on path, possible first app run: \(storeURL.path)")
             return
         }
 
@@ -79,9 +79,12 @@ public class CorePersistence {
                 }
                 try FileManager.default.removeItem(at: storeURL)
                 handleMigration?()
+                Log.verbose("Database performed migration.")
             } catch {
-                print("File manager failed to remove sql file:\n\(error)")
+                Log.error("File manager failed to remove sql file:\n\(error)")
             }
+        } else {
+            Log.verbose("CorePersistence stack initialized")
         }
     }
 
@@ -94,7 +97,7 @@ public class CorePersistence {
                                                                                             options: nil)
             isCompatible = model.isConfiguration(withName: nil, compatibleWithStoreMetadata: storeMetadata)
         } catch {
-            print("Failed to get metadata for persistent store at \(url).\n\(error)")
+            Log.error("Failed to get metadata for persistent store at \(url).\n\(error)")
         }
         return isCompatible
     }
@@ -102,7 +105,7 @@ public class CorePersistence {
     public func removeDatabase() {
         guard let documentsDirectory = FileManager.default.urls(for: .applicationSupportDirectory,
                                                                 in: .userDomainMask).last else {
-                                                                    print("Failed to get documents directories")
+                                                                    Log.error("Failed to get documents directories")
                                                                     return
         }
 
@@ -116,7 +119,7 @@ public class CorePersistence {
             _mainContainer = nil
 
         } catch {
-            print("File manager failed to remove sql file:\n\(error)")
+            Log.error("File manager failed to remove sql file:\n\(error)")
         }
     }
 }
@@ -126,7 +129,6 @@ extension NSPersistentContainer {
 
         guard let modelURL = bundle.url(forResource: name, withExtension: "momd"),
             let mom = NSManagedObjectModel.init(contentsOf: modelURL) else {
-
                 self.init(name: name)
 
                 return

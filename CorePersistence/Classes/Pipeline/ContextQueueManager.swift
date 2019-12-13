@@ -44,7 +44,7 @@ class ContextQueueManager {
                     try context.save()
 
                 } catch {
-                    print("\n\n\nCONTEXT SAVING FAILED\n\(error)\n\n")
+                    Log.error("Context failedt to save with error:\n\(error)\n\n")
                 }
             }
 

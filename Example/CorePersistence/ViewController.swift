@@ -75,7 +75,19 @@ extension ViewController {
             print(persistedUser)
         })
         
-        // Single uesr get by it's unique id key marked with idKeyPath
+        // Creates a temporary user, does not exist outside of closure
+        User.createTemporary { (temporaryUser, context) in
+            temporaryUser.uuid = "b4c7900b-10f0-45ff-8692-0ff1e5ce2ac4"
+            temporaryUser.firstName = "Mark"
+            temporaryUser.lastName = "Twain"
+            temporaryUser.birthDate = Date()
+            
+            let address = Address(context: context)
+            address.uuid = "a8b6c763-eb10-4e82-b872-5504ee4c762c"
+            temporaryUser.address = address
+        }
+        
+        // Single user get by it's unique id key marked with idKeyPath
         let user = User.get(entityID: uuid)
         
         // Get all users
@@ -86,7 +98,7 @@ extension ViewController {
                                          sortDescriptors: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)])
         
         // Fetch all User objects, store it so that it remains in memory
-        results = Results<User>(predicate: \User.address != nil) { (changes, newResults) in
+        results = Results<User>(predicate: \User.address != nil, sortBy: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)]) { (changes, newResults) in
             // Closure receieves bulk changes, with updated result set
             print(changes)
         }
@@ -116,7 +128,7 @@ extension ViewController {
             
             // Delete all users with a certain condition expressed in predicate
             User.delete(with: DeleteOptions(predicate: \User.birthDate < Date())) {
-                print("Finished deleting")
+                Log.verbose("Finished deleting")
             }
         }
     }

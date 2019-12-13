@@ -37,7 +37,7 @@ public protocol Persistable {
     /// - Returns: Existing object with `entityID`, or a new one if `shouldCreate` flag is set to `true`.
     static func get(entityID: EntityID,
                     from store: StoreManager,
-                    sourceContext: NSManagedObjectContext?,
+                    sourceContext: NSManagedObjectContext,
                     shouldCreate: Bool) -> Self?
 
     /// Retrives multiple entities from a `StoreManager` instance defined with `store` parameter, defaultly from a
@@ -53,7 +53,7 @@ public protocol Persistable {
     static func get(from store: StoreManager,
                     using predicate: NSPredicate,
                     sortDescriptors: [NSSortDescriptor]?,
-                    sourceContext: NSManagedObjectContext?) -> [Self]
+                    sourceContext: NSManagedObjectContext) -> [Self]
 
     /// Retrieves all entities from a `StoreManager` instance defined with `store` parameter, defaultly from a
     /// main context on the `store`, but a different one can be passed with `sourceContext` parameter.
@@ -64,7 +64,7 @@ public protocol Persistable {
     /// - Returns: All existing objects
     static func getAll(from store: StoreManager,
                        sortDescriptors: [NSSortDescriptor]?,
-                       sourceContext: NSManagedObjectContext?) -> [Self]
+                       sourceContext: NSManagedObjectContext) -> [Self]
 
     /// Creates a `Persistable` entity on a background context on a `NSPersistentStore` defined with `store` parameter
     /// `updateClosure` is triggered on a background thread, passing a newly created object, or if it already exists,
@@ -108,7 +108,7 @@ public protocol Persistable {
     ///             Default is the one defined in `Persistance`.
     ///     - context: Source `NSManagedObjectContext`. Default is Main Context
     ///     - completeClosure: Closure which is triggered after context save
-    func delete(from store: StoreManager, sourceContext: NSManagedObjectContext?, completeClosure: (() -> Void)?)
+    func delete(from store: StoreManager, sourceContext: NSManagedObjectContext, completeClosure: (() -> Void)?)
 
     /// Deletes a collection of entity results fetched by `predicate` condition
     ///
@@ -131,74 +131,61 @@ public extension Persistable where Self: NSManagedObject {
     }
 
     static func get(entityID: EntityID,
-                    from store: StoreManager = StoreManager(),
-                    sourceContext: NSManagedObjectContext? = nil,
+                    from store: StoreManager = StoreManager.default,
+                    sourceContext: NSManagedObjectContext = StoreManager.default.mainContext,
                     shouldCreate: Bool = false) -> Self? {
-
-        let context: NSManagedObjectContext
-        if let sourceContext = sourceContext {
-            context = sourceContext
-        } else {
-            context = store.mainContext
-        }
 
         let fetchRequest = NSFetchRequest<Self>(entityName: "\(Self.self)")
         fetchRequest.predicate = idKeyPath == entityID
 
         do {
-            if let result = try context.fetch(fetchRequest).first {
+            if let result = try sourceContext.fetch(fetchRequest).first {
                 return result
 
             } else if shouldCreate {
-                if context == store.mainContext {
-                    print("\n\nATTEMPTING TO FETCH ENTITY OF TYPE: \(Self.self) FROM MAIN THREAD\n\n")
-                } else {
-                    return Self(entity: Self.entity(), insertInto: context)
+                guard sourceContext != store.mainContext else {
+                    Log.error("\n\nTrying to fetch non existing entity with `shouldCreate` flag on mainContext. Entity creation must be done on background context, or left with default\n\n")
+                    return nil
                 }
+                return Self(entity: entity(), insertInto: sourceContext)
             }
+
         } catch {
-            print("\n\nFETCHING OF TYPE: \(Self.self) FAILED\n \(error)\n\n")
+            Log.error("Failed fetching entity of type: \(Self.self)")
         }
 
         return nil
     }
 
-    static func get(from store: StoreManager = StoreManager(),
+    static func get(from store: StoreManager = StoreManager.default,
                     using predicate: NSPredicate,
                     sortDescriptors: [NSSortDescriptor]? = nil,
-                    sourceContext: NSManagedObjectContext? = nil) -> [Self] {
-
-        let context: NSManagedObjectContext
-        if let sourceContext = sourceContext {
-            context = sourceContext
-        } else {
-            context = store.mainContext
-        }
+                    sourceContext: NSManagedObjectContext = StoreManager.default.mainContext) -> [Self] {
 
         let fetchRequest = NSFetchRequest<Self>(entityName: "\(Self.self)")
         fetchRequest.predicate = predicate
         fetchRequest.sortDescriptors = sortDescriptors
 
         do {
-            return try context.fetch(fetchRequest)
+            return try sourceContext.fetch(fetchRequest)
 
         } catch {
-            print("\n\nFETCHING OF TYPE: \(Self.self) FAILED\n \(error)\n\n")
+            Log.error("Failed fetching entity of type: \(Self.self)")
         }
 
         return []
     }
 
-    static func getAll(from store: StoreManager = StoreManager(),
+    static func getAll(from store: StoreManager = StoreManager.default,
                        sortDescriptors: [NSSortDescriptor]? = nil,
-                       sourceContext: NSManagedObjectContext? = nil) -> [Self] {
+                       sourceContext: NSManagedObjectContext = StoreManager.default.mainContext) -> [Self] {
         return get(from: store,
                    using: .true,
                    sortDescriptors: sortDescriptors,
                    sourceContext: sourceContext)
     }
 
-    static func create(in store: StoreManager = StoreManager(),
+    static func create(in store: StoreManager = StoreManager.default,
                        updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
                        completeClosure: ((Self) -> Void)?) {
         store.performBackgroundTask { (context) in
@@ -212,7 +199,10 @@ public extension Persistable where Self: NSManagedObject {
                 entityID = temporaryEntity[keyPath: idKeyPath]
                 
                 guard let entityID = entityID else { return }
-                let entitiesToDelete = get(from: store, using: idKeyPath == entityID, sourceContext: context).filter { $0.objectID != temporaryEntity.objectID }
+                let entitiesToDelete = get(from: store,
+                                           using: idKeyPath == entityID,
+                                           sourceContext: context)
+                    .filter { $0.objectID != temporaryEntity.objectID }
                 
                 if !entitiesToDelete.isEmpty {
                     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "\(Self.self)")
@@ -221,14 +211,15 @@ public extension Persistable where Self: NSManagedObject {
                     do {
                         try context.execute(deleteRequest)
                     } catch {
-                        print("\n\nDuplicate deletion of type: \(Self.self) FAILED\n \(error). There are two entities in database with id \(entityID)\n\n")
+                        Log.error("Failed to remove a duplicate entity of type \(Self.self) with id: \(entityID), aborting.")
+                        context.reset()
                     }
                 }
                 
             }, dataPersistedCompleteClosure: {
                 DispatchQueue.main.async {
                     guard let entityID = entityID, let savedObject = Self.get(entityID: entityID, from: store) else {
-                        print("\n\nENTITY OF TYPE \(Self.self) WAS NOT SAVED ON MAIN CONTEXT\n\n")
+                        Log.error("Entity of type \(Self.self) failed to save in persistent store.")
                         return
                     }
                     completeClosure?(savedObject)
@@ -237,17 +228,17 @@ public extension Persistable where Self: NSManagedObject {
         }
     }
 
-    static func createTemporary(in store: StoreManager = StoreManager(),
+    static func createTemporary(in store: StoreManager = StoreManager.default,
                                 updateClosure: @escaping (Self, NSManagedObjectContext) -> Void) {
 
         store.performBackgroundTask { (context) in
-            let temporaryEntity = Self(entity: Self.entity(), insertInto: context)
+            let temporaryEntity = Self(entity: entity(), insertInto: context)
             updateClosure(temporaryEntity, context)
             context.reset()
         }
     }
 
-    func update(in store: StoreManager = StoreManager(),
+    func update(in store: StoreManager = StoreManager.default,
                 updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
                 completeClosure: ((Self) -> Void)? = nil) {
 
@@ -259,7 +250,7 @@ public extension Persistable where Self: NSManagedObject {
                 guard let refetchedEntity = Self.get(entityID: uniqueID,
                                                      from: store,
                                                      sourceContext: context) else {
-                    print("\n\nFAILED TO FETCH ENTITY \(Self.self) with id: \(uniqueID)\n\n")
+                                                        Log.error("Failed to fetch entity of type \(Self.self) with id: \(uniqueID)")
                     return
                 }
 
@@ -268,19 +259,19 @@ public extension Persistable where Self: NSManagedObject {
             }, dataPersistedCompleteClosure: {
                 DispatchQueue.main.async {
                     let uniqueID = self[keyPath: Self.idKeyPath]
-                    if let refetchedEntity = Self.get(entityID: uniqueID, from: store) {
-                        completeClosure?(refetchedEntity)
-
-                    } else {
-                        print("\n\nFAILED TO FETCH ENTITY \(Self.self) with id: \(uniqueID)\n\n")
+                    guard let refetchedEntity = Self.get(entityID: uniqueID, from: store) else {
+                        Log.error("Entity of type \(Self.self) failed to save in persistent store.")
+                        return
                     }
+                    completeClosure?(refetchedEntity)
                 }
             })
         }
     }
 
-    func delete(from store: StoreManager = StoreManager(),
-                sourceContext: NSManagedObjectContext? = nil, completeClosure: (() -> Void)? = nil) {
+    func delete(from store: StoreManager = StoreManager.default,
+                sourceContext: NSManagedObjectContext = StoreManager.default.newBackgroundContext,
+                completeClosure: (() -> Void)? = nil) {
         let uniqueID = self[keyPath: Self.idKeyPath]
         let deleteOptions = DeleteOptions(sourceContext: sourceContext,
                                           predicate: Self.idKeyPath == uniqueID)
@@ -289,17 +280,16 @@ public extension Persistable where Self: NSManagedObject {
                     completeClosure: completeClosure)
     }
 
-    static func delete(from store: StoreManager = StoreManager(),
+    static func delete(from store: StoreManager = StoreManager.default,
                        with options: DeleteOptions = DeleteOptions(),
                        completeClosure: (() -> Void)? = nil) {
 
-        let context: NSManagedObjectContext
-        if let sourceContext = options.sourceContext, sourceContext != store.mainContext {
-            context = sourceContext
-        } else {
-            context = store.newBackgroundContext
+        guard options.sourceContext != store.mainContext else {
+            Log.error("Trying to perform delete operations on main context. Aborting.")
+            return
         }
-
+        let context = options.sourceContext
+        
         context.perform {
             ContextQueueManager.instance.push(context: context, dataModificationClosure: {
                 let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "\(Self.self)")
@@ -314,16 +304,21 @@ public extension Persistable where Self: NSManagedObject {
                 batchDeleteRequest.resultType = .resultTypeObjectIDs
 
                 do {
-                    if let result = try context.execute(batchDeleteRequest) as? NSBatchDeleteResult,
-                        let entityIDs = result.result as? [NSManagedObjectID] {
+                    guard
+                        let result = try context.execute(batchDeleteRequest) as? NSBatchDeleteResult,
+                        let entityIDs = result.result as? [NSManagedObjectID] else {
+                            Log.error("Batch delete \(Self.self) is not of type `NSBatchDeleteResult`. Aborting.")
 
-                        let changes = [NSDeletedObjectsKey: entityIDs]
-                        NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [store.mainContext])
-                    } else {
-                        print("\n\nRESULT OF BATCH DELETE OF \(Self.self) IS NOT OF TYPE `NSBatchDeleteResult`\n\n")
+                            context.reset()
+                            return
                     }
+
+                    let changes = [NSDeletedObjectsKey: entityIDs]
+                    NSManagedObjectContext.mergeChanges(fromRemoteContextSave: changes, into: [store.mainContext])
+
                 } catch {
-                    print("\n\nBATCH DELETE OF ENTITY \(Self.self) FAILED\n\(error)\n\n")
+                    Log.error("Delete operation of entity of type: \(Self.self) failed with error:\n\(error)\nAborting.")
+                    context.reset()
                 }
             }, dataPersistedCompleteClosure: {
                 DispatchQueue.main.async {
@@ -335,8 +330,8 @@ public extension Persistable where Self: NSManagedObject {
 }
 
 public extension Collection where Element: PersistableManagedObject {
-    func delete(from store: StoreManager = StoreManager(),
-                context: NSManagedObjectContext,
+    func delete(from store: StoreManager = StoreManager.default,
+                context: NSManagedObjectContext = StoreManager.default.newBackgroundContext,
                 complete: @escaping () -> Void) {
         let ids = map { $0[keyPath: Element.idKeyPath] }
 
@@ -344,6 +339,5 @@ public extension Collection where Element: PersistableManagedObject {
         Element.delete(from: store,
                        with: deleteOptions,
                        completeClosure: complete)
-
     }
 }
