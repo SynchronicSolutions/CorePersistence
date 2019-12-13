@@ -16,6 +16,7 @@ class ViewController: UIViewController {
     let users: [[String: Any]] = [
         [
             "uuid": "8fda9bf4-4631-4290-ac4b-7ce62a3aacd6",
+            "account_type": 1,
             "first_name": "Tom",
             "last_name": "Selleck",
             "number_of_orders": "27.0",
@@ -37,34 +38,60 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        parseDemo()
+        crudDemo()
+    }
+}
+
+// MARK: PARSABLE
+
+extension ViewController {
+    func parseDemo() {
         User.parse(jsonArray: users) { parsedUsers in
             _ = parsedUsers.first?.uuid
             print(parsedUsers)
         }
+    }
+}
+
+// MARK: PERSISTABLE
+
+extension ViewController {
+    
+    func crudDemo() {
         
-        let user = User.get(entityID: uuid)
-        user?.update(updateClosure: { (user, context) in
-            user.birthDate = Date()
-            user.numberOfOrders = 50
+        // Create a new user, if the user with this unique id already exists, it will overwrite it
+        User.create(updateClosure: { (userToUpdate, context) in
+            userToUpdate.uuid = "b4c7900b-10f0-45ff-8692-0ff1e5ce2ac4"
+            userToUpdate.firstName = "Mark"
+            userToUpdate.lastName = "Twain"
+            userToUpdate.birthDate = Date()
             
-            let newOrder = Order(context: context)
-            let newAddress = Address(context: context)
-            newAddress.uuid = "669cdb66-58ba-4579-a951-1b0acac7aae5"
+            let address = Address(context: context)
+            address.uuid = "a8b6c763-eb10-4e82-b872-5504ee4c762c"
+            userToUpdate.address = address
             
-            newOrder.uuid = "b8b3183d-2ea9-477d-99c5-98f7e7707ef4"
-            newOrder.address = newAddress
-            
-            user.orders.insert(newOrder)
-            
-        }, completeClosure: { user in
-            _ = user.uuid
-            print(user)
+        }, completeClosure: { persistedUser in
+            print(persistedUser)
         })
         
-        results = Results<User>(predicate: .true) { (changes, newResults) in
+        // Single uesr get by it's unique id key marked with idKeyPath
+        let user = User.get(entityID: uuid)
+        
+        // Get all users
+        let allUsers = User.getAll()
+        
+        // Users with the first name Mark sorted by birth date
+        let usersWithNameMark = User.get(using: \User.firstName == "Mark" && \User.birthDate <= Date(),
+                                         sortDescriptors: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)])
+        
+        // Fetch all User objects, store it so that it remains in memory
+        results = Results<User>(predicate: \User.address != nil) { (changes, newResults) in
+            // Closure receieves bulk changes, with updated result set
             print(changes)
         }
         
+        // Update fetched user with new data
         user?.update(updateClosure: { (user, context) in
             user.birthDate = Date()
             user.numberOfOrders = 50
@@ -82,6 +109,17 @@ class ViewController: UIViewController {
             _ = user.uuid
             print(user)
         })
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            // Delete a single entity
+            user?.delete()
+            
+            // Delete all users with a certain condition expressed in predicate
+            User.delete(with: DeleteOptions(predicate: \User.birthDate < Date())) {
+                print("Finished deleting")
+            }
+        }
     }
 }
+
 

@@ -77,7 +77,7 @@ public protocol Persistable {
     ///   - completeClosure: After saving backgrond context, the complete block is dispatched asynchronously on the
     ///                      main thread, with a fresh object refetched from main context.
     static func create(in store: StoreManager,
-                       updateClosure: @escaping (Self) -> Void,
+                       updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
                        completeClosure: ((Self) -> Void)?)
 
     /// Create a temporary object which will be destroyed after the exection
@@ -193,13 +193,13 @@ public extension Persistable where Self: NSManagedObject {
                        sortDescriptors: [NSSortDescriptor]? = nil,
                        sourceContext: NSManagedObjectContext? = nil) -> [Self] {
         return get(from: store,
-                   using: NSPredicate(format: "TRUEPREDICATE"),
+                   using: .true,
                    sortDescriptors: sortDescriptors,
                    sourceContext: sourceContext)
     }
 
     static func create(in store: StoreManager = StoreManager(),
-                       updateClosure: @escaping (Self) -> Void,
+                       updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
                        completeClosure: ((Self) -> Void)?) {
         store.performBackgroundTask { (context) in
             var entityID: EntityID?
@@ -207,12 +207,12 @@ public extension Persistable where Self: NSManagedObject {
             dataModificationClosure: {
 
                 let temporaryEntity = Self(context: context)
-                updateClosure(temporaryEntity)
+                updateClosure(temporaryEntity, context)
                 
-                entityID = temporaryEntity[keyPath: Self.idKeyPath]
+                entityID = temporaryEntity[keyPath: idKeyPath]
                 
                 guard let entityID = entityID else { return }
-                let entitiesToDelete = Self.get(from: store, using: idKeyPath == entityID, sourceContext: context).filter { $0.objectID != temporaryEntity.objectID }
+                let entitiesToDelete = get(from: store, using: idKeyPath == entityID, sourceContext: context).filter { $0.objectID != temporaryEntity.objectID }
                 
                 if !entitiesToDelete.isEmpty {
                     let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "\(Self.self)")

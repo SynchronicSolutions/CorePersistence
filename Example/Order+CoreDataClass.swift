@@ -12,9 +12,11 @@ import CorePersistence
 
 @objc(Order)
 final public class Order: ParsableManagedObject {
+
     public static var idKeyPath: WritableKeyPath<Order, String> {
         return \Self.uuid
     }
+    
     public func mapValues(from map: MappingValues) {
         address <- map["address_id"]
     }

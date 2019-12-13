@@ -9,9 +9,14 @@
 
 import Foundation
 import CoreData
-
+import CorePersistence
 
 extension User {
+    
+    public enum UserType: Int, Transformable {
+        case user
+        case admin
+    }
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<User> {
         return NSFetchRequest<User>(entityName: "User")
@@ -24,4 +29,14 @@ extension User {
     @NSManaged public var numberOfOrders: Int
     @NSManaged public var address: Address?
     @NSManaged public var orders: Set<Order>
+    
+    @NSManaged private var typeValue: Int
+    public var type: UserType {
+        set {
+            typeValue = newValue.rawValue
+        }
+        get {
+            return UserType(rawValue: typeValue) ?? .user
+        }
+    }
 }
