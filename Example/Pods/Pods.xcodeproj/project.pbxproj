@@ -13,7 +13,7 @@
 		1EDC3378A468B01DF48BD17E1033C3CC /* CorePersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 794C1CE654A19E4D6124C86763E272FA /* CorePersistence.swift */; };
 		30CFC9B64A28A7252C9BDA924E260A45 /* Pods-CorePersistence_Example-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 534E227CDC9BB610C985BF8FA6EE5BAF /* Pods-CorePersistence_Example-dummy.m */; };
 		459E071A529D0D7F8E52DF7809EF480A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3212113385A8FBBDB272BD23C409FF61 /* Foundation.framework */; };
-		45BF63F123A7896500F5C189 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BF63F023A7896500F5C189 /* Log.swift */; };
+		45BF63F423A7C97400F5C189 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BF63F323A7C97400F5C189 /* Log.swift */; };
 		5EBB29BABBD00D7A6F506615EB99B64F /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1026FFBA5105FFC35DB677CC07DE3FAF /* Operators.swift */; };
 		69B32219781235529DCBE675D03234F1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3212113385A8FBBDB272BD23C409FF61 /* Foundation.framework */; };
 		7004ED9C1CF7AF58603CC76C5C1FD8A7 /* KeyPath+Predicate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE718632DD2C4E393D9209F6ABA6FE41 /* KeyPath+Predicate.swift */; };
@@ -60,7 +60,7 @@
 		2F56FED5499A5DF1DA4EE6424358DDEA /* Pods-CorePersistence_Tests.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = "Pods-CorePersistence_Tests.modulemap"; sourceTree = "<group>"; };
 		3212113385A8FBBDB272BD23C409FF61 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS12.2.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		3E7005504F12B8D20D08109F5BBBD493 /* MappingValues.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MappingValues.swift; sourceTree = "<group>"; };
-		45BF63F023A7896500F5C189 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		45BF63F323A7C97400F5C189 /* Log.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
 		46779CCE9D6F9257FDA7D6CA2B237DB1 /* Pods-CorePersistence_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-CorePersistence_Example.release.xcconfig"; sourceTree = "<group>"; };
 		4DC55AEBEF281A49023ABF74E6B7247F /* Pods-CorePersistence_Tests-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-CorePersistence_Tests-Info.plist"; sourceTree = "<group>"; };
 		4E26E4918FE3C8B5E648FAB684C86B8A /* CorePersistence-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "CorePersistence-Info.plist"; sourceTree = "<group>"; };
@@ -145,7 +145,7 @@
 				B7C64F4FDD09F4C37E18B35032FBE6C8 /* Parsing */,
 				73A7BA1C7C494B4CC9B3EB1BCA15DE5C /* Pipeline */,
 				7EEFCD14060C566093482B57CA694B30 /* Result */,
-				45BF63EF23A7895500F5C189 /* Utility */,
+				45BF63F223A7C97400F5C189 /* Utility */,
 				6FE630EF9791DCB13B3254F4356D557B /* Pod */,
 				CA729BBEDA04DED42264293B433CE1D8 /* Support Files */,
 			);
@@ -153,12 +153,13 @@
 			path = ../..;
 			sourceTree = "<group>";
 		};
-		45BF63EF23A7895500F5C189 /* Utility */ = {
+		45BF63F223A7C97400F5C189 /* Utility */ = {
 			isa = PBXGroup;
 			children = (
-				45BF63F023A7896500F5C189 /* Log.swift */,
+				45BF63F323A7C97400F5C189 /* Log.swift */,
 			);
-			path = Utility;
+			name = Utility;
+			path = CorePersistence/Classes/Utility;
 			sourceTree = "<group>";
 		};
 		554846F9217BE863907486DAC0CA4085 /* Pods-CorePersistence_Tests */ = {
@@ -457,7 +458,7 @@
 				813D6243AE24D822E6A850E8AE2FBCCA /* Dictionary+KeyPath.swift in Sources */,
 				7004ED9C1CF7AF58603CC76C5C1FD8A7 /* KeyPath+Predicate.swift in Sources */,
 				897CCB8EB118E1C7AA326EBC95D202BD /* MappingValues.swift in Sources */,
-				45BF63F123A7896500F5C189 /* Log.swift in Sources */,
+				45BF63F423A7C97400F5C189 /* Log.swift in Sources */,
 				5EBB29BABBD00D7A6F506615EB99B64F /* Operators.swift in Sources */,
 				7D9EC3285254DD4C3E797228436DDCAC /* Parsable.swift in Sources */,
 				034E3F2DEDF4673B90D663F003E3F1B4 /* Persistable.swift in Sources */,
