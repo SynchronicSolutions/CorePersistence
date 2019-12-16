@@ -30,7 +30,7 @@ public protocol Persistable {
     /// - Parameters:
     ///   - entityID: Unique ID which every entity must have, and only one entity must have this particular one
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
     ///   - shouldCreate: If the entity doesn't exist in this context,
     ///     the flag should define if the method should create the entity.
@@ -45,7 +45,7 @@ public protocol Persistable {
     ///
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///   - predicate: Query predicate used to fetch the entities.
     ///   - sortDescriptors: Array of `NSSortDescriptor` instances.
     ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
@@ -59,7 +59,7 @@ public protocol Persistable {
     /// main context on the `store`, but a different one can be passed with `sourceContext` parameter.
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
     /// - Returns: All existing objects
     static func getAll(from store: StoreManager,
@@ -72,7 +72,7 @@ public protocol Persistable {
     ///
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///   - updateClosure: Triggered when a new entity is created or, existing entity fetched.
     ///   - completeClosure: After saving backgrond context, the complete block is dispatched asynchronously on the
     ///                      main thread, with a fresh object refetched from main context.
@@ -85,7 +85,7 @@ public protocol Persistable {
     ///
     /// - Parameters:
     ///     - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///     - updateClosure: Closure with new temporary object for editing
     static func createTemporary(in store: StoreManager,
                                 updateClosure: @escaping (Self, NSManagedObjectContext) -> Void)
@@ -94,7 +94,7 @@ public protocol Persistable {
     ///
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///   - updateClosure: Closure with object for editing
     ///   - completeClosure: Closure with saved object on main thread
     func update(in store: StoreManager,
@@ -105,7 +105,7 @@ public protocol Persistable {
     ///
     /// - Parameters:
     ///     - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///     - context: Source `NSManagedObjectContext`. Default is Main Context
     ///     - completeClosure: Closure which is triggered after context save
     func delete(from store: StoreManager, sourceContext: NSManagedObjectContext, completeClosure: (() -> Void)?)
@@ -114,7 +114,7 @@ public protocol Persistable {
     ///
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `Persistance`.
+    ///             Default is the one defined in `CorePersistence`.
     ///   - predicate: `NSPredicate` which specified which entities to delete
     ///   - context: Source `NSManagedObjectContext`. Default is Main Context
     ///   - offsetPage: Delete from `offsetPage`, page size is 10

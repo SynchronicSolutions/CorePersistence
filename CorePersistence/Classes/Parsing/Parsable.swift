@@ -25,7 +25,7 @@ public protocol Parsable: PersistableManagedObject {
     /// - Parameters:
     ///   - json: [String: Any] dictionary which contains data which should be parsed.
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///            Default is the one defined in `Persistance`.
+    ///            Default is the one defined in `CorePersistence`.
     ///   - completeClosure: After the parsing is finished, `completeClosure` is triggered with a fresh entity from
     ///                      a `store`'s main context.
     static func parse(json: JSONObject, in store: StoreManager, completeClosure: ((Self?) -> Void)?)
@@ -38,7 +38,7 @@ public protocol Parsable: PersistableManagedObject {
     /// - Parameters:
     ///   - jsonArray: Array of [String: Any] dictionaries which contain data which should be parsed.
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///            Default is the one defined in `Persistance`.
+    ///            Default is the one defined in `CorePersistence`.
     ///   - completeClosure: After the parsing is finished, `completeClosure`
     ///                      is triggered with a fresh array of entities from a `store`'s main context.
     static func parse(jsonArray: [JSONObject],

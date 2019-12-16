@@ -82,7 +82,7 @@ static func create(in store: StoreManager,
 Creates a `Persistable` entity on a background context on a `NSPersistentStore` defined with `store` parameter  `updateClosure` is triggered on a background thread, passing a newly created object, or if it already exists,
 object to be updated.
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _updateClosure_: Triggered when a new entity is created or, existing entity fetched.
 - _completeClosure_: After saving backgrond context, the complete block is dispatched asynchronously on the main thread, with a fresh object refetched from main context.
 
@@ -110,7 +110,7 @@ static func createTemporary(in store: StoreManager,
 ```
 Create a temporary object which will be destroyed after the exection of `updateClosure` closure.
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _updateClosure_: Closure with new temporary object for editing
 
 ###### Example:
@@ -153,7 +153,7 @@ static func get(from store: StoreManager,
 ```
 Retrives multiple entities from a `StoreManager` instance defined with `store` parameter, defaultly from a main context on the `store`, but different one can be passed with `sourceContext` parameter.
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _predicate_: Query predicate used to fetch the entities.
 - _sortDescriptors_: Array of `NSSortDescriptor` instances.
 - _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
@@ -219,7 +219,7 @@ func delete(from store: StoreManager,
 ```
 Deletes an entity from a NSManagedObjectContext specified by `context` parameter
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _context_: Source `NSManagedObjectContext`. Default is Main Context
 - _completeClosure_: Closure which is triggered after context save
 
@@ -237,7 +237,7 @@ static func delete(from store: StoreManager,
 ```
 Deletes a collection of entity results fetched by `predicate` condition
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _predicate_: `NSPredicate` which specified which entities to delete
 - _context_: Source `NSManagedObjectContext`. Default is Main Context
 - _offsetPage_: Delete from `offsetPage`, page size is 10
@@ -338,7 +338,7 @@ Method which performs parsing on a `Parsable` type. Given a `json` dictionary, a
 
 ###### Parameters:
 - _json_: [String: Any] dictionary which contains data which should be parsed.
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _completeClosure_: After the parsing is finished, `completeClosure` is triggered with a fresh entity from `store`'s main context.
 
 ###### Example:
@@ -361,7 +361,7 @@ Method which performs parsing on a `Parsable` type. Given a `json` array of dict
 
 ###### Parameters:
 - _jsonArray_: Array of [String: Any] dictionaries which contain data which should be parsed.
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistance`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _completeClosure_: After the parsing is finished, `completeClosure` is triggered with a fresh array of entities from a `store`'s main context.
 
 ###### Example:
