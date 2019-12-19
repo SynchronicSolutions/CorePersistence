@@ -3,7 +3,7 @@
 //  Persistence
 //
 //  Created on on 12/21/18.
-//  Copyright © 2018 Human Dx, Ltd. All rights reserved.
+//  Copyright © 2018 Milos Babic, Ltd. All rights reserved.
 //
 
 import CoreData
@@ -45,15 +45,15 @@ public struct DeleteOptions {
     var sourceContext: NSManagedObjectContext
     var offset: Int?
     var predicate: NSPredicate
-    var sortDescriptors: [NSSortDescriptor]?
+    var comparisonClauses: [ComparisonClause]
 
     public init(sourceContext: NSManagedObjectContext = StoreManager.default.newBackgroundContext,
                 predicate: NSPredicate = .true,
-                sortDescriptors: [NSSortDescriptor]? = nil,
+                comparisonClauses: [ComparisonClause] = [],
                 offset: Int? = nil) {
         self.sourceContext = sourceContext
         self.predicate = predicate
-        self.sortDescriptors = sortDescriptors
+        self.comparisonClauses = comparisonClauses
         self.offset = offset
     }
 }

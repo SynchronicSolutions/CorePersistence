@@ -3,7 +3,7 @@
 //  Persistencec
 //
 //  Created on 6/26/18.
-//  Copyright © 2018 Human Dx, Ltd. All rights reserved.
+//  Copyright © 2018 Milos Babic, Ltd. All rights reserved.
 //
 
 import CoreData
@@ -15,56 +15,44 @@ public typealias PersistableManagedObject = Persistable & NSManagedObject
 /// which is used as a `NSFetchedResultsController` delegate, using a closure
 /// when a NSFetchedResultsDelegate has triggered `controllerDidChangeContent(_:)`
 public class Results<EntityType: PersistableManagedObject> {
-    public var fetchedResultsController: NSFetchedResultsController<EntityType>
+    public var fetchedResultsController: NSFetchedResultsController<EntityType>!
     public var refresher: ResultsRefresher<EntityType>?
-
-    /// Initializer for Results. Gathers all the information needed for `NSFetchedResultsController`,
-    /// and passing a `ResultsRefresher` to be used as a delegate
-    ///
-    /// - Parameters:
-    ///   - predicate: Predicate of the fetch request.
-    ///   - sortBy: The sort descriptors of the fetch request.
-    ///   - groupBy: An array of objects which define how the data should be groupped.
-    ///   - context: Source context for the `NSFetchedResultsController`
-    ///   - changesDidHappenClosure: Closure which triggers when some changes occur on context
-    public init(predicate: NSPredicate,
-                sortBy: [NSSortDescriptor]? = nil,
-                groupBy: [String]? = nil,
-                context: NSManagedObjectContext? = nil,
-                changesDidHappenClosure: (([ResultsRefresher<EntityType>.Change],
-                                            Results<EntityType>) -> Void)? = nil) {
-
-        var managedObjectContext: NSManagedObjectContext
-        if let context = context {
-            managedObjectContext = context
-        } else {
-            let storeManager = StoreManager()
-            managedObjectContext = storeManager.mainContext
-        }
-
-        let fetchRequest = NSFetchRequest<EntityType>(entityName: "\(EntityType.self)")
-        fetchRequest.predicate = predicate
-        fetchRequest.propertiesToGroupBy = groupBy
-        fetchRequest.sortDescriptors = sortBy ?? [NSSortDescriptor(keyPath: EntityType.idKeyPath, ascending: true)]
-
-        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
-                                                              managedObjectContext: managedObjectContext,
-                                                              sectionNameKeyPath: nil,
-                                                              cacheName: nil)
-
-        if let changesDidHappenClosure = changesDidHappenClosure {
-            refresher = ResultsRefresher<EntityType>(results: self) { (changes, newState) in
-                changesDidHappenClosure(changes, newState)
-            }
-        }
-
-        do {
-            fetchedResultsController.delegate = refresher
-            try fetchedResultsController.performFetch()
-
-        } catch {
-            Log.error("Results failed to fetch entities of type:\(EntityType.self)")
-        }
+    
+    public var context: NSManagedObjectContext = StoreManager.default.mainContext
+    public var predicate: NSPredicate?
+    public var sortDescriptors: [NSSortDescriptor] = [NSSortDescriptor(keyPath: EntityType.idKeyPath, ascending: true)]
+    
+    public init(context: NSManagedObjectContext = StoreManager.default.mainContext) {
+        self.context = context
+        refetch()
+    }
+    
+    @discardableResult
+    public func filterBy(_ predicate: NSPredicate) -> Self {
+        self.predicate = predicate
+        refetch()
+        return self
+    }
+    
+    @discardableResult
+    public func sortBy(_ comparisons: ComparisonClause...) -> Self {
+        self.sortDescriptors = comparisons.map { $0.sortDescriptor }
+        refetch()
+        return self
+    }
+    
+    @discardableResult
+    public func registerForChanges(closure: @escaping ([ResultsRefresher<EntityType>.Change]) -> Void) -> Self{
+        refresher = ResultsRefresher<EntityType>(results: self, accumulatedChanges: { (changes, _) in
+            closure(changes)
+        })
+        
+        fetchedResultsController.delegate = refresher
+        return self
+    }
+    
+    public func toArray() -> [EntityType] {
+        return fetchedResultsController.fetchedObjects ?? []
     }
 
     /// Flag which indicates if the collection is empty
@@ -115,5 +103,31 @@ public class Results<EntityType: PersistableManagedObject> {
             return objects
         }
         return []
+    }
+}
+
+private extension Results {
+    private func refetch() {
+        let fetchRequest = NSFetchRequest<EntityType>(entityName: "\(EntityType.self)")
+        fetchRequest.predicate = predicate
+        fetchRequest.sortDescriptors = sortDescriptors
+        
+        fetchedResultsController = NSFetchedResultsController(fetchRequest: fetchRequest,
+                                                              managedObjectContext: context,
+                                                              sectionNameKeyPath: nil,
+                                                              cacheName: nil)
+        do {
+            try fetchedResultsController.performFetch()
+
+        } catch {
+            Log.error("Results failed to fetch entities of type:\(EntityType.self)")
+        }
+    }
+}
+
+
+extension NSSortDescriptor {
+    static func ascending<EntityType: PersistableManagedObject, T>(_ keyPath: KeyPath<EntityType, T>) -> NSSortDescriptor {
+        return NSSortDescriptor(keyPath: keyPath, ascending: true)
     }
 }

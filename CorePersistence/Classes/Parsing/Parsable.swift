@@ -3,7 +3,7 @@
 //  Persistence
 //
 //  Created on on 12/21/18.
-//  Copyright © 2018 Human Dx, Ltd. All rights reserved.
+//  Copyright © 2018 Milos Babic, Ltd. All rights reserved.
 //
 
 import CoreData
@@ -11,7 +11,7 @@ public typealias ParsableManagedObject = NSManagedObject & Parsable
 
 public protocol Parsable: PersistableManagedObject {
 
-    /// Key in JSON dictionary which will represent a unique `id`
+    /// Key in JSON dictionary which will represent a unique `id`. Default to set to string value of `idKeyPath`
     static var jsonKey: String { get }
 
     /// Variable which represents deserialized `Parsable` object
@@ -20,7 +20,7 @@ public protocol Parsable: PersistableManagedObject {
     /// Method which performs parsing on a `Parsable` type. Given a `json` dictionary,
     /// an Entity is parsed using `mapValues(:)`, and then, on a background context, persisted to `NSPersistentStore`.
     /// If an object already exists in the store, that one will be updated, so that the uniqueness of `entityID` will
-    /// be kept.ectMapper
+    /// be kept.
     ///
     /// - Parameters:
     ///   - json: [String: Any] dictionary which contains data which should be parsed.
@@ -99,9 +99,7 @@ public extension Parsable {
                                                                        context: backgroundContext).map { $0[keyPath: idKeyPath] }
             }, dataPersistedCompleteClosure: {
                 DispatchQueue.main.async {
-                    let sourceContext = backgroundContext.parent ?? store.mainContext
-                    let entityPredicate = idKeyPath === entityIDs
-                    let entities = get(from: store, using: entityPredicate, sourceContext: sourceContext)
+                    let entities = get(from: store, using: idKeyPath === entityIDs, sourceContext: backgroundContext.parent ?? store.mainContext)
                     completeClosure?(entities)
                 }
             })
@@ -109,31 +107,34 @@ public extension Parsable {
     }
 
     static func fillEntity(with jsonArray: [JSONObject],
-                           storeManager: StoreManager = StoreManager(),
+                           storeManager: StoreManager = StoreManager.default,
                            context: NSManagedObjectContext) -> [Self] {
-
+        
         var filledEntites: [Self] = []
         for json in jsonArray {
             guard
                 let transformableEntityID = json[keyPath: jsonKey] as? BasicTransformable,
-                let entityID = EntityID.transform(value: transformableEntityID),
-                var entity = get(entityID: entityID,
-                                 from: storeManager,
-                                 sourceContext: context,
-                                 shouldCreate: true) else {
+                let entityID = EntityID.transform(value: transformableEntityID) else {
                 continue
             }
+            
+            var entityToFill: Self
+            if let entity = get(entityID: entityID, from: storeManager, sourceContext: context) {
+                entityToFill = entity
+            } else {
+                entityToFill = Self.init(entity: entity(), insertInto: context)
+            }
 
-            entity[keyPath: idKeyPath] = entityID
-            entity.mapValues(from: MappingValues(json: json, context: context))
-            filledEntites.append(entity)
+            entityToFill[keyPath: idKeyPath] = entityID
+            entityToFill.mapValues(from: MappingValues(json: json, context: context))
+            filledEntites.append(entityToFill)
         }
 
         return filledEntites
     }
 
     static func fillEntity(with json: JSONObject,
-                           storeManager: StoreManager = StoreManager(),
+                           storeManager: StoreManager = StoreManager.default,
                            context: NSManagedObjectContext) -> Self? {
         return fillEntity(with: [json], storeManager: storeManager, context: context).first
     }

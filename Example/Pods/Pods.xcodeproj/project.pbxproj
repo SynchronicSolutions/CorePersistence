@@ -14,6 +14,7 @@
 		30CFC9B64A28A7252C9BDA924E260A45 /* Pods-CorePersistence_Example-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 534E227CDC9BB610C985BF8FA6EE5BAF /* Pods-CorePersistence_Example-dummy.m */; };
 		459E071A529D0D7F8E52DF7809EF480A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3212113385A8FBBDB272BD23C409FF61 /* Foundation.framework */; };
 		45BF63F423A7C97400F5C189 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45BF63F323A7C97400F5C189 /* Log.swift */; };
+		45F861C123AA6FC400C9B459 /* ComparisonClause.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45F861C023AA6FC400C9B459 /* ComparisonClause.swift */; };
 		5EBB29BABBD00D7A6F506615EB99B64F /* Operators.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1026FFBA5105FFC35DB677CC07DE3FAF /* Operators.swift */; };
 		69B32219781235529DCBE675D03234F1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3212113385A8FBBDB272BD23C409FF61 /* Foundation.framework */; };
 		7004ED9C1CF7AF58603CC76C5C1FD8A7 /* KeyPath+Predicate.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE718632DD2C4E393D9209F6ABA6FE41 /* KeyPath+Predicate.swift */; };
@@ -61,6 +62,7 @@
 		3212113385A8FBBDB272BD23C409FF61 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS12.2.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		3E7005504F12B8D20D08109F5BBBD493 /* MappingValues.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MappingValues.swift; sourceTree = "<group>"; };
 		45BF63F323A7C97400F5C189 /* Log.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
+		45F861C023AA6FC400C9B459 /* ComparisonClause.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComparisonClause.swift; sourceTree = "<group>"; };
 		46779CCE9D6F9257FDA7D6CA2B237DB1 /* Pods-CorePersistence_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-CorePersistence_Example.release.xcconfig"; sourceTree = "<group>"; };
 		4DC55AEBEF281A49023ABF74E6B7247F /* Pods-CorePersistence_Tests-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-CorePersistence_Tests-Info.plist"; sourceTree = "<group>"; };
 		4E26E4918FE3C8B5E648FAB684C86B8A /* CorePersistence-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "CorePersistence-Info.plist"; sourceTree = "<group>"; };
@@ -215,6 +217,7 @@
 				BE718632DD2C4E393D9209F6ABA6FE41 /* KeyPath+Predicate.swift */,
 				682F32A484B9783807F8123D6D057EC9 /* PredicateOperators.swift */,
 				E298A3350ECE34AEBEB13D8A1AAAA443 /* PredicateProtocol.swift */,
+				45F861C023AA6FC400C9B459 /* ComparisonClause.swift */,
 			);
 			name = Comparison;
 			path = CorePersistence/Classes/Comparison;
@@ -465,6 +468,7 @@
 				EBEE879557D80B2F434AF17DBAAA96AD /* PredicateOperators.swift in Sources */,
 				9DD33E8E05BDE80E2167396D36877874 /* PredicateProtocol.swift in Sources */,
 				7EA53BE3B4A622A5AC74CC51B320F186 /* Results.swift in Sources */,
+				45F861C123AA6FC400C9B459 /* ComparisonClause.swift in Sources */,
 				DE258EB2B94910529FA344657A825BE4 /* ResultsRefresher.swift in Sources */,
 				83E5DD66F3E4BEF56115EB63372CA3A6 /* StoreManager.swift in Sources */,
 				E17CE7ACC4595687AEBF2F8420B7540E /* Transformable.swift in Sources */,
