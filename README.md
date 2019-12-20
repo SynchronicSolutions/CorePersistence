@@ -452,12 +452,89 @@ Results object is a wrapper around `NSFetchedResultsController` which encapsulat
 
 ###### Example:
 ```swift
-results = Results<User>(predicate: \User.address != nil, sortBy: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)]) { (changes, newResults) in
-    // Closure receieves bulk changes, with updated result set
-    print(changes)
+results = Results<User>()
+    .filterBy(\User.address != nil)
+    .sortBy(.ascending(\User.birthDate), .descending(\User.address))
+    .registerForChanges { (changes) in
+        print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
 }
 ```
 If the results is defined in current scope, and it's reference isn't kept outside the scope, refreshes won't occur, because the object will get deallocated.
+
+### Methods
+```swift
+public init(context: NSManagedObjectContext = StoreManager.default.mainContext)
+```
+Initializer which fetches all entities of type `EntityType` and sorts them by `idKeyPath`
+
+###### Parameters:
+ - _context_: source context
+ 
+ ###### Example:
+ ```swift
+results = Results<User>()
+```
+___
+
+```swift
+public func filterBy(_ predicate: NSPredicate) -> Self
+```
+Filters previously fetched results.
+
+###### Parameters:
+ - _predicate_: Predicate which defines rules for filtering
+ 
+ ###### Example:
+ ```swift
+results = Results<User>().filterBy(\User.birthDate <= Date())
+```
+___
+
+```swift
+public func sortBy(_ comparisons: ComparisonClause...) -> Self
+```
+Sorts previously fetched results
+
+###### Parameters:
+ - _comparisons_: Instances of `ComparisonClause` which can be either `.ascending` or `.descending`
+ 
+ ###### Example:
+ ```swift
+ results = Results<User>().sortBy(.ascending(\User.date()), .descending(\User.lastName))
+```
+___
+```swift
+public func registerForChanges(closure: @escaping (_ changes: [ResultsRefresher<EntityType>.Change]) -> Void) -> Self{
+```
+Used to register for changes which happen on `NSManagedObjectContext`  which is specified in Results init. When changes occur, `closure` is triggered and accumulated changes are passed. Changes contain a change `type` (insert, update, move, delete), `newIndexPath` which will be not nil in case of insert and move types, `indexPath` which will not be nil in case of update, move and delete, and object of type `EntityType`.
+__Important: If the Results instance is not saved outside of the scope it was instanced in, `ResultsRefresher` closure wil be deallocated with `Results`, and changes won't occur.__
+
+###### Parameters:
+ - _closure_: Closure which will be triggered when changes on context happen
+ - _changes_: Array of type `Change` defined in `ResultsRefresher` which contain  a change `type` (insert, update, move, delete), `newIndexPath` which will be not nil in case of insert and move types, `indexPath` which will not be nil in case of update, move and delete, and object of type `EntityType`.
+ 
+ ###### Example:
+ ```swift
+ results = Results<User>()
+     .registerForChanges { (changes) in
+         print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
+ }
+```
+___
+```swift
+public func toArray() -> [EntityType]
+```
+Converts results object to an array of `EntityType`
+
+ ###### Example:
+ ```swift
+ let entityArray = Results<User>()
+     .filterBy(\User.address != nil)
+     .sortBy(.ascending(\User.birthDate), .descending(\User.address))
+     .registerForChanges { (changes) in
+         print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
+ }.toArray()
+```
 
 ## Loging
 

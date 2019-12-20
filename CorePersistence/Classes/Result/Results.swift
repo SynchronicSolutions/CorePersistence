@@ -22,11 +22,18 @@ public class Results<EntityType: PersistableManagedObject> {
     public var predicate: NSPredicate?
     public var sortDescriptors: [NSSortDescriptor] = [NSSortDescriptor(keyPath: EntityType.idKeyPath, ascending: true)]
     
+    /// Initializer which fetches all entities of type `EntityType` and sorts them by `idKeyPath`
+    /// - Parameter context: source context
     public init(context: NSManagedObjectContext = StoreManager.default.mainContext) {
         self.context = context
         refetch()
     }
     
+    /// Filters previously fetched results.
+    /// - Parameter predicate: Predicate which defines rules for filtering
+    /// - Example:
+    /// ```Results().filterBy(\User.birthDate <= Date())```
+    /// - Returns: Instance of Results.
     @discardableResult
     public func filterBy(_ predicate: NSPredicate) -> Self {
         self.predicate = predicate
@@ -34,6 +41,11 @@ public class Results<EntityType: PersistableManagedObject> {
         return self
     }
     
+    /// Sorts previously fetched results.
+    /// - Parameter comparisons: Instances of `ComparisonClause` which can be either `.ascending` or `.descending`
+    /// - Example:
+    /// ```Results().sortBy(.ascending(\User.firstName), .descending(\User.lastName))```
+    /// - Returns: Instance of Results.
     @discardableResult
     public func sortBy(_ comparisons: ComparisonClause...) -> Self {
         self.sortDescriptors = comparisons.map { $0.sortDescriptor }
@@ -41,8 +53,15 @@ public class Results<EntityType: PersistableManagedObject> {
         return self
     }
     
+    /// Used to register for changes which happen on `NSManagedObjectContext`  which is specified in Results init. When changes occur, `closure` is triggered and accumulated changes are passed.
+    /// Changes contain a change `type` (insert, update, move, delete), `newIndexPath` which will be not nil in case of insert and move types, `indexPath` which will not be nil in case of update, move and delete, and object of type `EntityType`.
+    /// - Important: If the Results instance is not saved outside of the scope it was instanced in, `ResultsRefresher` closure wil be deallocated with `Results`, and changes won't occur.
+    /// - Parameters:
+    ///     - closure: Closure which will be triggered when changes on context happen
+    ///     - changes: Array of type `Change` defined in `ResultsRefresher` which contain  a change `type` (insert, update, move, delete), `newIndexPath` which will be not nil in case of insert and move types, `indexPath` which will not be nil in case of update, move and delete, and object of type `EntityType`.
+    /// - Returns: Instance of Results.
     @discardableResult
-    public func registerForChanges(closure: @escaping ([ResultsRefresher<EntityType>.Change]) -> Void) -> Self{
+    public func registerForChanges(closure: @escaping (_ changes: [ResultsRefresher<EntityType>.Change]) -> Void) -> Self{
         refresher = ResultsRefresher<EntityType>(results: self, accumulatedChanges: { (changes, _) in
             closure(changes)
         })
@@ -51,6 +70,8 @@ public class Results<EntityType: PersistableManagedObject> {
         return self
     }
     
+    
+    /// Converts results object to an array of `EntityType`
     public func toArray() -> [EntityType] {
         return fetchedResultsController.fetchedObjects ?? []
     }
