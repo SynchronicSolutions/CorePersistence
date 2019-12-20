@@ -48,8 +48,7 @@ class ViewController: UIViewController {
 extension ViewController {
     func parseDemo() {
         User.parse(jsonArray: users) { parsedUsers in
-            _ = parsedUsers.first?.uuid
-            print(parsedUsers)
+            print("Parsed user ids \(parsedUsers.map { $0.uuid })")
         }
     }
 }
@@ -61,71 +60,63 @@ extension ViewController {
     func crudDemo() {
         
         // Create a new user, if the user with this unique id already exists, it will overwrite it
-        User.create(updateClosure: { (userToUpdate, context) in
+        User.create(updateIfEntityExists: false, updateClosure: { (userToUpdate, context) in
             userToUpdate.uuid = "b4c7900b-10f0-45ff-8692-0ff1e5ce2ac4"
             userToUpdate.firstName = "Mark"
             userToUpdate.lastName = "Twain"
             userToUpdate.birthDate = Date()
-            
-            let address = Address(context: context)
-            address.uuid = "a8b6c763-eb10-4e82-b872-5504ee4c762c"
-            userToUpdate.address = address
-            
+            userToUpdate.address = Address(entityID: "a8b6c763-eb10-4e82-b872-5504ee4c762c", context: context)
+
         }, completeClosure: { persistedUser in
-            print(persistedUser)
+            print("ID of created user \(persistedUser.uuid)")
         })
-        
+
         // Creates a temporary user, does not exist outside of closure
         User.createTemporary { (temporaryUser, context) in
             temporaryUser.uuid = "b4c7900b-10f0-45ff-8692-0ff1e5ce2ac4"
             temporaryUser.firstName = "Mark"
             temporaryUser.lastName = "Twain"
             temporaryUser.birthDate = Date()
-            
-            let address = Address(context: context)
-            address.uuid = "a8b6c763-eb10-4e82-b872-5504ee4c762c"
-            temporaryUser.address = address
+
+            temporaryUser.address = Address(entityID: "a8b6c763-eb10-4e82-b872-5504ee4c762c", context: context)
         }
         
         // Single user get by it's unique id key marked with idKeyPath
         let user = User.get(entityID: uuid)
         
         // Get all users
-        let allUsers = User.getAll()
+        let _ = User.getAll()
         
         // Users with the first name Mark sorted by birth date
-        let usersWithNameMark = User.get(using: \User.firstName == "Mark" && \User.birthDate <= Date(),
-                                         sortDescriptors: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)])
+        let _ = User.get(using: \User.firstName == "Mark" && \User.birthDate <= Date(),
+                         comparisonClauses: [.ascending(\User.birthDate)])
         
         // Fetch all User objects, store it so that it remains in memory
-        results = Results<User>(predicate: \User.address != nil, sortBy: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)]) { (changes, newResults) in
-            // Closure receieves bulk changes, with updated result set
-            print(changes)
+        results = Results<User>()
+            .filterBy(\User.address != nil)
+            .sortBy(.ascending(\User.birthDate), .descending(\User.address))
+            .registerForChanges { (changes) in
+                print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
         }
         
         // Update fetched user with new data
-        user?.update(updateClosure: { (user, context) in
-            user.birthDate = Date()
-            user.numberOfOrders = 50
-            
-            let newOrder = Order(context: context)
-            let newAddress = Address(context: context)
-            newAddress.uuid = "669cdb66-58ba-4579-a951-1b0acac7aae5"
-            
-            newOrder.uuid = "b8b3183d-2ea9-477d-99c5-98f7e7707ef4"
-            newOrder.address = newAddress
-            
-            user.orders.insert(newOrder)
-            
-        }, completeClosure: { user in
-            _ = user.uuid
-            print(user)
-        })
-        
+        DispatchQueue.main.async {
+            user?.update(updateClosure: { (user, context) in
+                user.birthDate = Date()
+                user.numberOfOrders = 50
+
+                let newOrder = Order(entityID: "b8b3183d-2ea9-477d-99c5-98f7e7707ef4", context: context)
+                newOrder.address = Address(entityID: "669cdb66-58ba-4579-a951-1b0acac7aae5", context: context)
+                user.orders.insert(newOrder)
+
+            }, completeClosure: { user in
+                print("Updated birth date and number of orders: \(user.birthDate!)", "\(user.numberOfOrders)")
+            })
+        }
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            // Delete a single entity
             user?.delete()
-            
+
             // Delete all users with a certain condition expressed in predicate
             User.delete(with: DeleteOptions(predicate: \User.birthDate < Date())) {
                 Log.verbose("Finished deleting")

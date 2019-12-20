@@ -3,7 +3,7 @@
 //  Persistence
 //
 //  Created on 6/3/19.
-//  Copyright © 2019 Human Dx, Ltd. All rights reserved.
+//  Copyright © 2019 Milos Babic, Ltd. All rights reserved.
 //
 
 import Foundation

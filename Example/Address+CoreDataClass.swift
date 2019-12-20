@@ -12,6 +12,7 @@ import CorePersistence
 
 @objc(Address)
 final public class Address: ParsableManagedObject {
+    
     public static var idKeyPath: WritableKeyPath<Address, String> {
         return \Self.uuid
     }

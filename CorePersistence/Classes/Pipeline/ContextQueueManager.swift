@@ -3,7 +3,7 @@
 //  Persistence
 //
 //  Created on 6/25/18.
-//  Copyright © 2018 Human Dx, Ltd. All rights reserved.
+//  Copyright © 2018 Milos Babic, Ltd. All rights reserved.
 //
 
 import Foundation
@@ -18,11 +18,14 @@ class ContextQueueManager {
     static let instance: ContextQueueManager = ContextQueueManager()
 
     /// `OperationQueue` which guarantees that context are going to save one by one
-    lazy private var executionQueue: OperationQueue = {
+    lazy private var operationQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.maxConcurrentOperationCount = 1
+        queue.qualityOfService = .background
         return queue
     }()
+    
+    private let serialExecutionQueue = DispatchQueue(label: "ContextQueueManager.execution.queue")
 
     /// Method which adds a `NSManagedContext` to the queue. Closures are used to make changes to the context, and
     /// to notify that the context has finished saving.
@@ -34,21 +37,21 @@ class ContextQueueManager {
     func push(context: NSManagedObjectContext,
               dataModificationClosure: @escaping () -> Void,
               dataPersistedCompleteClosure: @escaping () -> Void) {
+        
+        serialExecutionQueue.sync {
+            operationQueue.addOperation {
+                context.refreshAllObjects()
+                dataModificationClosure()
+                if context.hasChanges {
+                    do {
+                        try context.save()
 
-        executionQueue.addOperation {
-            context.refreshAllObjects()
-            dataModificationClosure()
-
-            if context.hasChanges {
-                do {
-                    try context.save()
-
-                } catch {
-                    Log.error("Context failedt to save with error:\n\(error)\n\n")
+                    } catch {
+                        Log.error("Context failed to save with error:\n\(error)\n\n")
+                    }
                 }
+                dataPersistedCompleteClosure()
             }
-
-            dataPersistedCompleteClosure()
         }
     }
 }

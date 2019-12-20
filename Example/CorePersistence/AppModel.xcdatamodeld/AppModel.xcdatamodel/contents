@@ -18,7 +18,7 @@
         <attribute name="typeValue" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="uuid" attributeType="String" defaultValueString=""/>
         <relationship name="address" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Address" inverseName="user" inverseEntity="Address"/>
-        <relationship name="orders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Order" inverseName="user" inverseEntity="Order"/>
+        <relationship name="orders" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Order" inverseName="user" inverseEntity="Order"/>
     </entity>
     <elements>
         <element name="Address" positionX="-54" positionY="27" width="128" height="88"/>

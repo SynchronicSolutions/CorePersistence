@@ -17,6 +17,7 @@ CorePersistence is a pod which does all the CoreData management for you.
     - [Parsing](#parsing)
         - [Methods](#methods)
     - [Predicates](#predicates)
+    - [ComparisonClause](#comparisonClause)
     - [Results](#results)
     - [Loging](#loging)
 - [Example](#installation)
@@ -76,14 +77,17 @@ extension User {
 ___
 ```swift
 static func create(in store: StoreManager,
-                   updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
+                   updateIfEntityExists: Bool,
+                   updateClosure: @escaping (_ entity: Self, _ context: NSManagedObjectContext) -> Void,
                    completeClosure: ((Self) -> Void)?)
 ```
-Creates a `Persistable` entity on a background context on a `NSPersistentStore` defined with `store` parameter  `updateClosure` is triggered on a background thread, passing a newly created object, or if it already exists,
-object to be updated.
+Creates a `Persistable` entity on a background context on a `NSPersistentStore` defined with `store` parameter `updateClosure` is triggered on a background thread, passing a newly created object, or if it already exists, object to be updated.
 ###### Parameters:
 - _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
+- _updateIfEntityExists_: Flag which defines what the method will do when it finds a duplicate in the database. If set to `true`,  it will fetch the existing one and call `updateClosure` one more time to update the existing entity, if set to `false`, update will be omitted.
 - _updateClosure_: Triggered when a new entity is created or, existing entity fetched.
+- _entity_: Newly created entity to be updated.
+- _context_: Context on which the creation is executed on. Can be used to create relationship entities.
 - _completeClosure_: After saving backgrond context, the complete block is dispatched asynchronously on the main thread, with a fresh object refetched from main context.
 
 ###### Example:
@@ -93,14 +97,38 @@ User.create(updateClosure: { (userToUpdate, context) in
             userToUpdate.firstName = "Mark"
             userToUpdate.lastName = "Twain"
             userToUpdate.birthDate = Date()
-        
-            let address = Address(context: context)
-            address.uuid = "a8b6c763-eb10-4e82-b872-5504ee4c762c"
-            userToUpdate.address = address
+            userToUpdate.address = Address(entityID: "a8b6c763-eb10-4e82-b872-5504ee4c762c", context: context)
             
         }, completeClosure: { persistedUser in
             print(persistedUser)
         })
+```
+___
+
+```swift
+init(entityID: EntityID, in store: StoreManager, context: NSManagedObjectContext)
+```
+Init exclusively used to initialize relationship entities. Should be used when `create` or `update` is called, and context is available.
+###### Parameters:
+- _entityID_: Unique ID which every entity must have, and only one entity must have this particular one
+- _store_: StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
+- _context_: Context on which the creation is executed on.
+
+###### Example:
+```swift
+User.create(updateClosure: { (userToUpdate, context) in
+    userToUpdate.uuid = "b4c7900b-10f0-45ff-8692-0ff1e5ce2ac4"
+    userToUpdate.address = Address(entityID: "a8b6c763-eb10-4e82-b872-5504ee4c762c", context: context)
+    
+}, completeClosure: { persistedUser in
+    print(persistedUser)
+})
+
+user.update(updateClosure: { (userToUpdate, context) in
+    userToUpdate.address = Address(entityID: "a8b6c763-eb10-4e82-b872-5504ee4c762c", context: context)
+}, completeClosure: { updatedUser in
+    print(updatedUser)
+}
 ```
 ___
 
@@ -110,8 +138,10 @@ static func createTemporary(in store: StoreManager,
 ```
 Create a temporary object which will be destroyed after the exection of `updateClosure` closure.
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default parameter is StoreManagers's `default`, which contains default `NSPersistentStore`.
 - _updateClosure_: Closure with new temporary object for editing
+- _entity_: Newly created entity to be updated
+- _context_: Context on which the creation is executed on. Can be used to create relationship entities
 
 ###### Example:
 ```swift
@@ -127,16 +157,14 @@ ___
 ```swift
 static func get(entityID: EntityID,
                 from store: StoreManager,
-                sourceContext: NSManagedObjectContext,
-                shouldCreate: Bool) -> Self?
+                sourceContext: NSManagedObjectContext) -> Self?
 ```
 Retrieves a single entity from a `StoreManager` instance defined with `store` parameter, defaultly from a main context on the `store`, but a different one can be passed with `sourceContext` parameter.
 ###### Parameters:
 - _entityID_: Unique ID which every entity must have, and only one entity must have this particular one
 - _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistence`.
-- _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
-- _shouldCreate_: If the entity doesn't exist in this context, the flag should define if the method should create the entity.
-- _Returns_: Existing object with `entityID`, or a new one if `shouldCreate` flag is set to `true`.
+- _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`. Default is `mainContext`.
+- _Returns_:  Existing object with `entityID`, or nil if one could not be found.
 
 ###### Example:
 ```swift
@@ -148,39 +176,39 @@ ___
 ```swift
 static func get(from store: StoreManager,
                 using predicate: NSPredicate,
-                sortDescriptors: [NSSortDescriptor]?,
+                comparisonClauses: [ComparisonClause],
                 sourceContext: NSManagedObjectContext) -> [Self]
 ```
 Retrives multiple entities from a `StoreManager` instance defined with `store` parameter, defaultly from a main context on the `store`, but different one can be passed with `sourceContext` parameter.
 ###### Parameters:
 - _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
 - _predicate_: Query predicate used to fetch the entities.
-- _sortDescriptors_: Array of `NSSortDescriptor` instances.
-- _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
-- _Returns_: Objects from `sourceContext` which conform to `predicate` and sorted in regards to `sortDescriptors`
+- _comparisonClauses_: Array of `ComparisonClause` instances.
+- _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`. Default is `mainContext`.
+- _Returns_: Objects from `sourceContext` which conform to `predicate` and sorted in regards to `comparisonClauses`
     
 ###### Example:
 ```swift
 let usersWithNameMark = User.get(using: \User.firstName == "Mark" && \User.birthDate <= Date(),                      
-                                 sortDescriptors: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)])
+                                 comparisonClauses: [.ascending(\User.birthDate)])
 ```
 ___
 
 ```swift
 static func getAll(from store: StoreManager,
-                   sortDescriptors: [NSSortDescriptor]?,
+                   comparisonClauses: [ComparisonClause],
                    sourceContext: NSManagedObjectContext) -> [Self]
 ```
 Retrieves all entities from a `StoreManager` instance defined with `store` parameter, defaultly from a main context on the `store`, but a different one can be passed with `sourceContext` parameter.
 ###### Parameters:
-- _store_: `StoreManager` instance which contains `NSPersistentStore`.
-- _sortDescriptors_: Array of `NSSortDescriptor` instances.
-- _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
+- _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
+- _comparisonClauses_: Array of `ComparisonClause` instances.
+- _sourceContext_: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`. Default is `mainContext`.
 - _Returns_: All existing objects
 
 ###### Example:
 ```swift
-let allUsers = User.getAll()
+let allUsers = User.getAll(comparisonClauses: [.descending(\User.birthDate)])
 ```
 
 
@@ -189,21 +217,22 @@ ___
 
 ```swift
 func update(in store: StoreManager,
-            updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
+            updateClosure: @escaping (_ entity: Self, _ context: NSManagedObjectContext) -> Void,
             completeClosure: ((Self) -> Void)?)
 ```
 Update an object in an update closure.
 ###### Parameters:
 - _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `Persistence`.
 - _updateClosure_: Closure with object for editing
+- _entity_: Newly created entity to be updated
+- _context_: Context on which the creation is executed on. Can be used to create relationship entities.
 - _completeClosure_: Closure with saved object on main thread
 
 ###### Example
 ```swift
 user.update(updateClosure: { (user, context) in
         user.firstName = "New Name"
-        let newOrder = Order(context: context)
-        newOrder.uuid = "b8b3183d-2ea9-477d-99c5-98f7e7707ef4"
+        let newOrder = Order(entityID: "b8b3183d-2ea9-477d-99c5-98f7e7707ef4", context: context)
         user.orders.insert(newOrder)
         
     }, completeClosure: { updatedUser in
@@ -235,12 +264,10 @@ static func delete(from store: StoreManager,
                    with options: DeleteOptions,
                    completeClosure: (() -> Void)?)
 ```
-Deletes a collection of entity results fetched by `predicate` condition
+Deletes a collection of entity results fetched by `predicate` condition defined in `DeleteOptions`.
 ###### Parameters:
 - _store_: `StoreManager` instance which contains `NSPersistentStore`. Default is the one defined in `CorePersistence`.
-- _predicate_: `NSPredicate` which specified which entities to delete
-- _context_: Source `NSManagedObjectContext`. Default is Main Context
-- _offsetPage_: Delete from `offsetPage`, page size is 10
+- _options_: An instance of `DeleteOptions`, which can contain `NSPredicate`,  `ComparisonClause` instances, `offset`, and execution context.
 - _completeClosure_: Closure which is triggered after context save
 
 ###### Example:
@@ -403,18 +430,111 @@ NSPredicate(format: "uuid IN %@", uuids)
 \User.uuid === uuids
 ```
 
+## ComparisonClause
+
+`ComparisonClause` is used instead of `NSSortDescriptor` so that keypaths are used instead of strings.
+There are two static varibles that can be used:
+```swift
+public static func ascending<EntityType: PersistableManagedObject, PropertyType>(_ keyPath: KeyPath<EntityType, PropertyType>) -> ComparisonClause
+public static func descending<EntityType: PersistableManagedObject, PropertyType>(_ keyPath: KeyPath<EntityType, PropertyType>) -> ComparisonClause
+```
+
+###### Example:
+```swift
+results = Results<User>()
+    .filterBy(\User.address != nil)
+    .sortBy(.ascending(\User.birthDate), .descending(\User.address))
+```
+
 ## Results
 
 Results object is a wrapper around `NSFetchedResultsController` which encapsulates it's functionallity and switches to closure mechanic to deliver updates on the context instead of multiple delegate methods, and a lot of boilerplate. The main change is that the refresher closure is triggered when *ALL* the changes occur not one by one.
 
 ###### Example:
 ```swift
-results = Results<User>(predicate: \User.address != nil, sortBy: [NSSortDescriptor(keyPath: \User.birthDate, ascending: true)]) { (changes, newResults) in
-    // Closure receieves bulk changes, with updated result set
-    print(changes)
+results = Results<User>()
+    .filterBy(\User.address != nil)
+    .sortBy(.ascending(\User.birthDate), .descending(\User.address))
+    .registerForChanges { (changes) in
+        print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
 }
 ```
 If the results is defined in current scope, and it's reference isn't kept outside the scope, refreshes won't occur, because the object will get deallocated.
+
+### Methods
+```swift
+public init(context: NSManagedObjectContext = StoreManager.default.mainContext)
+```
+Initializer which fetches all entities of type `EntityType` and sorts them by `idKeyPath`
+
+###### Parameters:
+ - _context_: source context
+ 
+ ###### Example:
+ ```swift
+results = Results<User>()
+```
+___
+
+```swift
+public func filterBy(_ predicate: NSPredicate) -> Self
+```
+Filters previously fetched results.
+
+###### Parameters:
+ - _predicate_: Predicate which defines rules for filtering
+ 
+ ###### Example:
+ ```swift
+results = Results<User>().filterBy(\User.birthDate <= Date())
+```
+___
+
+```swift
+public func sortBy(_ comparisons: ComparisonClause...) -> Self
+```
+Sorts previously fetched results
+
+###### Parameters:
+ - _comparisons_: Instances of `ComparisonClause` which can be either `.ascending` or `.descending`
+ 
+ ###### Example:
+ ```swift
+ results = Results<User>().sortBy(.ascending(\User.date()), .descending(\User.lastName))
+```
+___
+```swift
+public func registerForChanges(closure: @escaping (_ changes: [ResultsRefresher<EntityType>.Change]) -> Void) -> Self{
+```
+Used to register for changes which happen on `NSManagedObjectContext`  which is specified in Results init. When changes occur, `closure` is triggered and accumulated changes are passed. Changes contain a change `type` (insert, update, move, delete), `newIndexPath` which will be not nil in case of insert and move types, `indexPath` which will not be nil in case of update, move and delete, and object of type `EntityType`.
+__Important: If the Results instance is not saved outside of the scope it was instanced in, `ResultsRefresher` closure wil be deallocated with `Results`, and changes won't occur.__
+
+###### Parameters:
+ - _closure_: Closure which will be triggered when changes on context happen
+ - _changes_: Array of type `Change` defined in `ResultsRefresher` which contain  a change `type` (insert, update, move, delete), `newIndexPath` which will be not nil in case of insert and move types, `indexPath` which will not be nil in case of update, move and delete, and object of type `EntityType`.
+ 
+ ###### Example:
+ ```swift
+ results = Results<User>()
+     .registerForChanges { (changes) in
+         print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
+ }
+```
+___
+```swift
+public func toArray() -> [EntityType]
+```
+Converts results object to an array of `EntityType`
+
+ ###### Example:
+ ```swift
+ let entityArray = Results<User>()
+     .filterBy(\User.address != nil)
+     .sortBy(.ascending(\User.birthDate), .descending(\User.address))
+     .registerForChanges { (changes) in
+         print("Changes: \(changes.map { ($0.type, $0.object.uuid) })")
+ }.toArray()
+```
 
 ## Loging
 
