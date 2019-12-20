@@ -32,6 +32,6 @@ public struct Log {
     
     static func printMessage(level: Level, message: String) {
         let levelIcons: String = level.rawValue
-        print("\n\(levelIcons) \(message) \(levelIcons)\n")
+        print("\(levelIcons) [CorePersistence] \(message) \(levelIcons)\n")
     }
 }

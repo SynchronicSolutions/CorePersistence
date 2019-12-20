@@ -3,7 +3,7 @@
 //  Persistence
 //
 //  Created on 6/20/18.
-//  Copyright © 2018 Human Dx, Ltd. All rights reserved.
+//  Copyright © 2018 Milos Babic, Ltd. All rights reserved.
 //
 
 import Foundation
@@ -15,30 +15,28 @@ public typealias JSONObject = [String: Any]
 /// It takes care of basic CRUD operations, where all reads are done defaultly on the main context, if none other
 /// is specified.
 ///
-/// Each method is using the default `NSPersistantStoreContainer` defined in the `Persistence` class, but if a new one
+/// Each method is using the default `StoreManager` which contains `NSPersistentContainer`, but if a new one
 /// is needed, it can be passed to any of the methods.
 public protocol Persistable {
 
-    /// Entity ID type which has to be the same type in the API and in the CoreData
+    /// Unique ID type which must conform to `BasicTransformable` protocol
     associatedtype EntityID: CVarArg & Equatable & BasicTransformable
 
+    /// Keypath which represents a property which will be used as primary key on entity
     static var idKeyPath: WritableKeyPath<Self, EntityID> { get }
-    
+        
     /// Retrieves a single entity from a `StoreManager` instance defined with `store` parameter, defaultly from a
-    /// main context on the `store`, but a different one can be passed with `sourceContext` parameter.
+    /// main context from `store`, but a different one can be passed with `sourceContext` parameter.
     ///
     /// - Parameters:
     ///   - entityID: Unique ID which every entity must have, and only one entity must have this particular one
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
     ///             Default is the one defined in `CorePersistence`.
-    ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
-    ///   - shouldCreate: If the entity doesn't exist in this context,
-    ///     the flag should define if the method should create the entity.
-    /// - Returns: Existing object with `entityID`, or a new one if `shouldCreate` flag is set to `true`.
+    ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`. Default is `mainContext`.
+    /// - Returns: Existing object with `entityID`, or nil if one could not be found
     static func get(entityID: EntityID,
                     from store: StoreManager,
-                    sourceContext: NSManagedObjectContext,
-                    shouldCreate: Bool) -> Self?
+                    sourceContext: NSManagedObjectContext) -> Self?
 
     /// Retrives multiple entities from a `StoreManager` instance defined with `store` parameter, defaultly from a
     /// main context on the `store`, but different one can be passed with `sourceContext` parameter.
@@ -47,12 +45,12 @@ public protocol Persistable {
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
     ///             Default is the one defined in `CorePersistence`.
     ///   - predicate: Query predicate used to fetch the entities.
-    ///   - sortDescriptors: Array of `NSSortDescriptor` instances.
-    ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
-    /// - Returns: Objects from `sourceContext` which conform to `predicate` and sorted in regards to `sortDescriptors`
+    ///   - comparisonClauses: Array of `ComparisonClause` instances.
+    ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`. Default is `mainContext`.
+    /// - Returns: Objects from `sourceContext` which conform to `predicate` and sorted in regards to `comparisonClauses`
     static func get(from store: StoreManager,
                     using predicate: NSPredicate,
-                    sortDescriptors: [NSSortDescriptor]?,
+                    comparisonClauses: [ComparisonClause],
                     sourceContext: NSManagedObjectContext) -> [Self]
 
     /// Retrieves all entities from a `StoreManager` instance defined with `store` parameter, defaultly from a
@@ -60,35 +58,52 @@ public protocol Persistable {
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
     ///             Default is the one defined in `CorePersistence`.
-    ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`.
+    ///   - comparisonClauses: Array of `ComparisonClause` instances.
+    ///   - sourceContext: Instance of `NSManagedObjectContext` in which the method will look for the `entityID`. Default is `mainContext`.
     /// - Returns: All existing objects
     static func getAll(from store: StoreManager,
-                       sortDescriptors: [NSSortDescriptor]?,
+                       comparisonClauses: [ComparisonClause],
                        sourceContext: NSManagedObjectContext) -> [Self]
-
+    
     /// Creates a `Persistable` entity on a background context on a `NSPersistentStore` defined with `store` parameter
-    /// `updateClosure` is triggered on a background thread, passing a newly created object, or if it already exists,
-    /// object to be updated.
-    ///
+    /// `updateClosure` is triggered on a background thread, passing a newly created object, or if it already exists, object to be updated.
     /// - Parameters:
-    ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `CorePersistence`.
+    ///   - store: StoreManager` instance which contains `NSPersistentStore`.
+    ///            Default is the one defined in `CorePersistence`.
+    ///   - updateIfEntityExists: Flag which defines what the method will do when it finds a duplicate in the database. If set to `true`,
+    ///                           it will fetch the existing one and call `updateClosure` one more time to update the existing entity, if set to `false`, update will be omitted.
     ///   - updateClosure: Triggered when a new entity is created or, existing entity fetched.
+    ///   - entity: Newly created entity to be updated
+    ///   - context: Context on which the creation is executed on. Can be used to create relationship entities
     ///   - completeClosure: After saving backgrond context, the complete block is dispatched asynchronously on the
     ///                      main thread, with a fresh object refetched from main context.
     static func create(in store: StoreManager,
-                       updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
+                       updateIfEntityExists: Bool,
+                       updateClosure: @escaping (_ entity: Self, _ context: NSManagedObjectContext) -> Void,
                        completeClosure: ((Self) -> Void)?)
+    
+    
+    /// Init exclusively used to initialize relationship entities. Should be used when `create` or `update` is called, and context is available.
+    /// - Parameters:
+    ///   - entityID: Unique ID which every entity must have, and only one entity must have this particular one
+    ///   - store: StoreManager` instance which contains `NSPersistentStore`.
+    ///            Default is the one defined in `CorePersistence`.
+    ///   - context: Context on which the creation is executed on.
+    init(entityID: EntityID, in store: StoreManager, context: NSManagedObjectContext)
 
+
+    
     /// Create a temporary object which will be destroyed after the exection
-    /// of `updateClosure` closure
+    /// of `updateClosure`
     ///
     /// - Parameters:
     ///     - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `CorePersistence`.
+    ///              Default parameter is StoreManagers's `default`, which contains default `NSPersistentStore`.
     ///     - updateClosure: Closure with new temporary object for editing
+    ///     - entity: Newly created entity to be updated
+    ///     - context: Context on which the creation is executed on. Can be used to create relationship entities
     static func createTemporary(in store: StoreManager,
-                                updateClosure: @escaping (Self, NSManagedObjectContext) -> Void)
+                                updateClosure: @escaping (_ entity: Self, _ context: NSManagedObjectContext) -> Void)
 
     /// Update an object in an update closure
     ///
@@ -96,28 +111,27 @@ public protocol Persistable {
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
     ///             Default is the one defined in `CorePersistence`.
     ///   - updateClosure: Closure with object for editing
+    ///   - entity: Newly created entity to be updated
+    ///   - context: Context on which the creation is executed on. Can be used to create relationship entities.
     ///   - completeClosure: Closure with saved object on main thread
     func update(in store: StoreManager,
-                updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
+                updateClosure: @escaping (_ entity: Self, _ context: NSManagedObjectContext) -> Void,
                 completeClosure: ((Self) -> Void)?)
 
     /// Deletes an entity from a NSManagedObjectContext specified by `context` parameter
     ///
     /// - Parameters:
     ///     - store: `StoreManager` instance which contains `NSPersistentStore`.
-    ///             Default is the one defined in `CorePersistence`.
-    ///     - context: Source `NSManagedObjectContext`. Default is Main Context
+    ///              Default parameter is StoreManagers's `default`, which contains default `NSPersistentStore`.
+    ///     - context: Source `NSManagedObjectContext`. Default is StoreManager's `newBackgroundContext`
     ///     - completeClosure: Closure which is triggered after context save
     func delete(from store: StoreManager, sourceContext: NSManagedObjectContext, completeClosure: (() -> Void)?)
 
-    /// Deletes a collection of entity results fetched by `predicate` condition
-    ///
+    /// Deletes a collection of entity results fetched by `predicate` condition defined in `DeleteOptions`.
     /// - Parameters:
     ///   - store: `StoreManager` instance which contains `NSPersistentStore`.
     ///             Default is the one defined in `CorePersistence`.
-    ///   - predicate: `NSPredicate` which specified which entities to delete
-    ///   - context: Source `NSManagedObjectContext`. Default is Main Context
-    ///   - offsetPage: Delete from `offsetPage`, page size is 10
+    ///   - options: An instance of `DeleteOptions`, which can contain `NSPredicate`,  `ComparisonClause` instances, `offset`, and execution context.
     ///   - completeClosure: Closure which is triggered after context save
     static func delete(from store: StoreManager,
                        with options: DeleteOptions,
@@ -129,26 +143,16 @@ public extension Persistable where Self: NSManagedObject {
     var uniqueIdValue: EntityID {
         return self[keyPath: Self.idKeyPath]
     }
-
+    
     static func get(entityID: EntityID,
                     from store: StoreManager = StoreManager.default,
-                    sourceContext: NSManagedObjectContext = StoreManager.default.mainContext,
-                    shouldCreate: Bool = false) -> Self? {
+                    sourceContext: NSManagedObjectContext = StoreManager.default.mainContext) -> Self? {
 
         let fetchRequest = NSFetchRequest<Self>(entityName: "\(Self.self)")
         fetchRequest.predicate = idKeyPath == entityID
 
         do {
-            if let result = try sourceContext.fetch(fetchRequest).first {
-                return result
-
-            } else if shouldCreate {
-                guard sourceContext != store.mainContext else {
-                    Log.error("\n\nTrying to fetch non existing entity with `shouldCreate` flag on mainContext. Entity creation must be done on background context, or left with default\n\n")
-                    return nil
-                }
-                return Self(entity: entity(), insertInto: sourceContext)
-            }
+            return try sourceContext.fetch(fetchRequest).first
 
         } catch {
             Log.error("Failed fetching entity of type: \(Self.self)")
@@ -159,12 +163,12 @@ public extension Persistable where Self: NSManagedObject {
 
     static func get(from store: StoreManager = StoreManager.default,
                     using predicate: NSPredicate,
-                    sortDescriptors: [NSSortDescriptor]? = nil,
+                    comparisonClauses: [ComparisonClause] = [],
                     sourceContext: NSManagedObjectContext = StoreManager.default.mainContext) -> [Self] {
 
         let fetchRequest = NSFetchRequest<Self>(entityName: "\(Self.self)")
         fetchRequest.predicate = predicate
-        fetchRequest.sortDescriptors = sortDescriptors
+        fetchRequest.sortDescriptors = comparisonClauses.map { $0.sortDescriptor }
 
         do {
             return try sourceContext.fetch(fetchRequest)
@@ -177,15 +181,16 @@ public extension Persistable where Self: NSManagedObject {
     }
 
     static func getAll(from store: StoreManager = StoreManager.default,
-                       sortDescriptors: [NSSortDescriptor]? = nil,
+                       comparisonClauses: [ComparisonClause] = [],
                        sourceContext: NSManagedObjectContext = StoreManager.default.mainContext) -> [Self] {
         return get(from: store,
                    using: .true,
-                   sortDescriptors: sortDescriptors,
+                   comparisonClauses: comparisonClauses,
                    sourceContext: sourceContext)
     }
 
     static func create(in store: StoreManager = StoreManager.default,
+                       updateIfEntityExists: Bool = true,
                        updateClosure: @escaping (Self, NSManagedObjectContext) -> Void,
                        completeClosure: ((Self) -> Void)?) {
         store.performBackgroundTask { (context) in
@@ -199,21 +204,20 @@ public extension Persistable where Self: NSManagedObject {
                 entityID = temporaryEntity[keyPath: idKeyPath]
                 
                 guard let entityID = entityID else { return }
-                let entitiesToDelete = get(from: store,
-                                           using: idKeyPath == entityID,
-                                           sourceContext: context)
-                    .filter { $0.objectID != temporaryEntity.objectID }
+                let duplicateEntities = get(from: store,
+                                            using: idKeyPath == entityID && \Self.objectID != temporaryEntity.objectID,
+                                            sourceContext: context)
                 
-                if !entitiesToDelete.isEmpty {
-                    let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "\(Self.self)")
-                    fetchRequest.predicate = NSPredicate(format: "self in %@", entitiesToDelete)
-                    let deleteRequest = NSBatchDeleteRequest( fetchRequest: fetchRequest)
-                    do {
-                        try context.execute(deleteRequest)
-                    } catch {
-                        Log.error("Failed to remove a duplicate entity of type \(Self.self) with id: \(entityID), aborting.")
+                if !duplicateEntities.isEmpty {
+                    if updateIfEntityExists {
+                        context.delete(temporaryEntity)
+                        Log.warning("There is already an entity of type \(Self.self) with id: \(entityID), in database, will trigger `updateClosure` again to populate existing entity.")
+                        duplicateEntities.forEach { updateClosure($0, context) }
+                        
+                    } else {
+                        Log.error("Trying to create an entity of type: \(Self.self) with unique id: \(entityID), which already exists in database. If it's meant to be updated set `updateIfEntityExists` flag to `true`. Aborting.")
                         context.reset()
-                    }
+                    }   
                 }
                 
             }, dataPersistedCompleteClosure: {
@@ -225,6 +229,26 @@ public extension Persistable where Self: NSManagedObject {
                     completeClosure?(savedObject)
                 }
             })
+        }
+    }
+    
+    init(entityID: EntityID, in store: StoreManager = StoreManager.default, context: NSManagedObjectContext) {
+        guard context != StoreManager.default.mainContext else {
+            Log.error("Trying to create an entity on main context! This init method is only meant to be used when creating relationships. Aborting.")
+            assertionFailure("Trying to create an entity on main context! This init method is only meant to be used when creating relationships. Aborting.")
+            
+            let newBackgroundContext = store.newBackgroundContext
+            self = Self(entity: Self.entity(), insertInto: newBackgroundContext)
+            newBackgroundContext.reset()
+            return
+        }
+        
+        if let existingEntity = Self.get(entityID: entityID, from: store, sourceContext: context) {
+            Log.warning("Trying to create relationship of type \(Self.self) with id: \(entityID) which already exists. Using persisted one")
+            self = existingEntity
+        } else {
+            self = Self(entity: Self.entity(), insertInto: context)
+            self[keyPath: Self.idKeyPath] = entityID
         }
     }
 
@@ -251,7 +275,7 @@ public extension Persistable where Self: NSManagedObject {
                                                      from: store,
                                                      sourceContext: context) else {
                                                         Log.error("Failed to fetch entity of type \(Self.self) with id: \(uniqueID)")
-                    return
+                                                        return
                 }
 
                 updateClosure(refetchedEntity, context)
@@ -294,7 +318,7 @@ public extension Persistable where Self: NSManagedObject {
             ContextQueueManager.instance.push(context: context, dataModificationClosure: {
                 let fetchRequest = NSFetchRequest<NSFetchRequestResult>(entityName: "\(Self.self)")
                 fetchRequest.predicate = options.predicate
-                fetchRequest.sortDescriptors = options.sortDescriptors
+                fetchRequest.sortDescriptors = options.comparisonClauses.map { $0.sortDescriptor }
 
                 if let offset = options.offset {
                     fetchRequest.fetchOffset = offset

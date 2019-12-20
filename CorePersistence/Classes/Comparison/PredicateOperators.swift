@@ -16,42 +16,42 @@ public func ==<RootType, EquatableType: Equatable, KeyPathType: KeyPath<RootType
 }
 
 public func !=<RootType, EquatableType: Equatable>(
-    left: WritableKeyPath<RootType, EquatableType>, right: EquatableType
+    left: KeyPath<RootType, EquatableType>, right: EquatableType
 ) -> ComparisonPredicate<RootType> {
 
     return left.predicate(op: .notEqualTo, value: right)
 }
 
 public func ><RootType, EquatableType: Equatable>(
-    left: WritableKeyPath<RootType, EquatableType>, right: EquatableType
+    left: KeyPath<RootType, EquatableType>, right: EquatableType
 ) -> ComparisonPredicate<RootType> {
 
     return left.predicate(op: .greaterThan, value: right)
 }
 
 public func <<RootType, EquatableType: Equatable>(
-    left: WritableKeyPath<RootType, EquatableType>, right: EquatableType
+    left: KeyPath<RootType, EquatableType>, right: EquatableType
 ) -> ComparisonPredicate<RootType> {
 
     return left.predicate(op: .lessThan, value: right)
 }
 
 public func >=<RootType, EquatableType: Equatable>(
-    left: WritableKeyPath<RootType, EquatableType>, right: EquatableType
+    left: KeyPath<RootType, EquatableType>, right: EquatableType
 ) -> ComparisonPredicate<RootType> {
 
     return left.predicate(op: .greaterThanOrEqualTo, value: right)
 }
 
 public func <=<RootType, EquatableType: Equatable>(
-    left: WritableKeyPath<RootType, EquatableType>, right: EquatableType
+    left: KeyPath<RootType, EquatableType>, right: EquatableType
 ) -> ComparisonPredicate<RootType> {
 
     return left.predicate(op: .lessThanOrEqualTo, value: right)
 }
 
 public func ===<RootType, SequenceType: Sequence>(
-    left: WritableKeyPath<RootType, SequenceType.Element>, right: SequenceType
+    left: KeyPath<RootType, SequenceType.Element>, right: SequenceType
 ) -> ComparisonPredicate<RootType> where SequenceType.Element: Equatable {
 
     return left.predicate(op: .in, value: right)
